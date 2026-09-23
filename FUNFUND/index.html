@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FunFund Backoffice Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN for Analytics & Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Alpine.js CDN for reactive state management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen" x-data="backofficeApp()">
+
+    <!-- ==================== STEP 1: LOGIN PAGE ==================== -->
+    <div x-show="step === 'login'" class="min-h-screen flex items-center justify-center p-6 bg-slate-100">
+        <div class="max-w-md w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+            <div class="text-center space-y-3">
+                <!-- Logo Box with Outer-Edge Cropping -->
+                <div class="w-20 h-20 rounded-2xl overflow-hidden mx-auto shadow-md border border-slate-200 flex items-center justify-center bg-emerald-500">
+                    <img src="content.png" alt="FunFund Logo" class="w-full h-full object-cover scale-125">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">FunFund Backoffice</h1>
+                    <p class="text-xs text-slate-500 mt-1">FinTech Operational Management System (v1.2)</p>
+                </div>
+            </div>
+
+            <form @submit.prevent="handleLogin()" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
+                    <input type="email" x-model="loginForm.email" required placeholder="admin@funfund.io" 
+                           class="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+                    <input type="password" x-model="loginForm.password" required placeholder="••••••••" 
+                           class="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800 transition">
+                </div>
+                
+                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-3 rounded-lg transition shadow-sm">
+                    Sign In to Portal
+                </button>
+            </form>
+
+            <div class="p-3 bg-slate-50 rounded-lg text-[11px] text-slate-500 text-center border border-slate-200">
+                🔒 Protected System: Enter any email/password to test demo authentication.
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== STEP 2: ROLE SELECTION PAGE ==================== -->
+    <div x-show="step === 'role_select'" class="min-h-screen flex items-center justify-center p-6 bg-slate-100">
+        <div class="max-w-2xl w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-200 shrink-0">
+                        <img src="content.png" alt="FunFund Logo" class="w-full h-full object-cover scale-125">
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Select Operational Role</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Role-Based Access Control (RBAC) Permission Assignment</p>
+                    </div>
+                </div>
+                <button @click="step = 'login'" class="text-xs text-slate-400 hover:text-slate-600 font-medium">← Back to Login</button>
+            </div>
+
+            <div class="space-y-3">
+                <template x-for="roleItem in roles" :key="roleItem.id">
+                    <button @click="selectRole(roleItem)" 
+                            class="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition flex items-center justify-between group">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-slate-900 text-sm" x-text="roleItem.name"></span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-600 group-hover:bg-slate-800 group-hover:text-white transition" x-text="roleItem.badge"></span>
+                            </div>
+                            <p class="text-xs text-slate-500" x-text="roleItem.desc"></p>
+                        </div>
+                        <div class="text-slate-300 group-hover:text-slate-800 transition font-bold text-lg">→</div>
+                    </button>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== STEP 3: MAIN DASHBOARD ==================== -->
+    <div x-show="step === 'app'" class="min-h-screen flex flex-col md:flex-row">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0">
+            <div>
+                <!-- Brand Header -->
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-slate-200 shrink-0">
+                            <img src="content.png" alt="FunFund Logo" class="w-full h-full object-cover scale-125">
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-900 text-sm leading-tight">FunFund</div>
+                            <div class="text-[10px] text-slate-400 font-medium">Backoffice Portal</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Items -->
+                <nav class="p-3 space-y-1">
+                    <div class="px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Main Navigation</div>
+                    <template x-for="menu in filteredMenus" :key="menu.id">
+                        <button @click="switchTab(menu.id)" 
+                                :class="currentTab === menu.id ? 'bg-slate-900 text-white font-medium' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
+                                class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs transition">
+                            <span x-text="menu.name"></span>
+                            <span x-show="menu.badge" class="px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full font-bold" x-text="menu.badge"></span>
+                        </button>
+                    </template>
+                </nav>
+            </div>
+
+            <!-- User Status Footer -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50">
+                <div class="mb-3">
+                    <div class="text-xs font-semibold text-slate-800 truncate" x-text="loginForm.email"></div>
+                    <div class="text-[10px] text-slate-500 truncate" x-text="'Role: ' + currentRole?.name"></div>
+                </div>
+                <button @click="switchRole()" class="w-full py-1.5 px-3 bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 text-xs font-medium rounded-lg transition text-center mb-1.5">
+                    Switch Role
+                </button>
+                <button @click="logout()" class="w-full py-1.5 px-3 bg-white border border-slate-200 text-red-600 hover:bg-red-50 hover:border-red-200 text-xs font-medium rounded-lg transition text-center">
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 bg-slate-50 p-6 md:p-8 overflow-y-auto">
+            
+            <!-- TOP BAR -->
+            <header class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-slate-200 gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900" x-text="getMenuTitle(currentTab)"></h2>
+                    <p class="text-xs text-slate-500 mt-0.5" x-text="getMenuDesc(currentTab)"></p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-500">Active Role:</span>
+                    <span class="text-xs font-semibold px-3 py-1 bg-slate-800 text-white rounded-full" x-text="currentRole?.name"></span>
+                </div>
+            </header>
+
+            <!-- TAB 1: DASHBOARD -->
+            <div x-show="currentTab === 'dashboard'" class="space-y-6">
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-xs text-slate-500 font-medium">Total Active Users</div>
+                        <div class="text-2xl font-bold text-slate-900 mt-2">12,480</div>
+                        <div class="text-[11px] text-emerald-600 font-medium mt-1">↑ +8.4% from last month</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-xs text-slate-500 font-medium">Daily Money Simulations</div>
+                        <div class="text-2xl font-bold text-slate-900 mt-2">1,240</div>
+                        <div class="text-[11px] text-emerald-600 font-medium mt-1">Normal activity rate</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-xs text-slate-500 font-medium">Pending KYC Reviews</div>
+                        <div class="text-2xl font-bold text-amber-600 mt-2">3 Requests</div>
+                        <div class="text-[11px] text-slate-400 mt-1">Requires compliance verification</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-xs text-slate-500 font-medium">Pending Sponsored Offers</div>
+                        <div class="text-2xl font-bold text-indigo-600 mt-2">1 Offer</div>
+                        <div class="text-[11px] text-slate-400 mt-1">Verified partner review</div>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS CHARTS SECTION -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900">User Growth & Daily Simulations Trend</h3>
+                                <p class="text-[11px] text-slate-500">Monthly active users vs simulator execution volume</p>
+                            </div>
+                            <span class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-md">Last 6 Months</span>
+                        </div>
+                        <div class="relative h-64">
+                            <canvas id="growthChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="text-sm font-bold text-slate-900">Customer Subscription Tiers</h3>
+                            <p class="text-[11px] text-slate-500">Breakdown by user category</p>
+                        </div>
+                        <div class="relative h-64 flex items-center justify-center">
+                            <canvas id="tierChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actionable Queues & System Health -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-slate-900">Recent KYC Verification Queue</h3>
+                            <button x-show="currentRole?.permissions.includes('kyc')" @click="switchTab('kyc')" class="text-xs text-slate-600 hover:text-slate-900 font-medium">View All →</button>
+                        </div>
+                        <div class="space-y-3">
+                            <template x-for="kyc in pendingKycList" :key="kyc.id">
+                                <div class="p-3 bg-slate-50 rounded-lg flex items-center justify-between border border-slate-100">
+                                    <div>
+                                        <div class="font-semibold text-xs text-slate-800" x-text="kyc.name"></div>
+                                        <div class="text-[11px] text-slate-500" x-text="'ID: ' + kyc.id + ' • ' + kyc.time"></div>
+                                    </div>
+                                    <span class="text-[10px] px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md font-medium">Pending Review</span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold text-slate-900">Market Data Infrastructure Health</h3>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg">
+                                <span class="text-slate-600">SET Stock Exchange Integration API</span>
+                                <span class="text-emerald-600 font-medium">● Operational (45ms)</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg">
+                                <span class="text-slate-600">Gold Market Price Feed</span>
+                                <span class="text-emerald-600 font-medium">● Sync Completed</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg">
+                                <span class="text-slate-600">Crypto Data Aggregator</span>
+                                <span class="text-amber-600 font-medium">▲ Delay Detected (2m)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CUSTOMER MANAGEMENT -->
+            <div x-show="currentTab === 'customers'" class="space-y-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 justify-between">
+                    <input type="text" x-model="customerSearch" placeholder="Search by Customer ID, Name, Phone..." class="text-xs px-3.5 py-2 border border-slate-200 rounded-lg w-full sm:w-80 focus:outline-none focus:border-slate-800">
+                    <div class="text-xs text-slate-500 flex items-center">
+                        Role Permission Level: <span class="font-semibold text-slate-800 ml-1" x-text="canEditCustomer ? 'Full Access (Read & Write)' : 'Restricted (Read-Only)'"></span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase text-[10px] tracking-wider">
+                            <tr>
+                                <th class="p-3.5">Customer ID</th>
+                                <th class="p-3.5">Full Name</th>
+                                <th class="p-3.5">Phone Number</th>
+                                <th class="p-3.5">KYC Status</th>
+                                <th class="p-3.5">Subscription Tier</th>
+                                <th class="p-3.5">Account Status</th>
+                                <th class="p-3.5 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="cust in filteredCustomers" :key="cust.id">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3.5 font-mono font-medium text-slate-900" x-text="cust.id"></td>
+                                    <td class="p-3.5 font-medium text-slate-800" x-text="cust.name"></td>
+                                    <td class="p-3.5 font-mono" x-text="cust.phone"></td>
+                                    <td class="p-3.5">
+                                        <span :class="{
+                                            'bg-emerald-100 text-emerald-800': cust.kyc === 'Verified',
+                                            'bg-amber-100 text-amber-800': cust.kyc === 'Pending',
+                                            'bg-red-100 text-red-800': cust.kyc === 'Rejected'
+                                        }" class="px-2 py-0.5 rounded text-[10px] font-medium" x-text="cust.kyc"></span>
+                                    </td>
+                                    <td class="p-3.5" x-text="cust.tier"></td>
+                                    <td class="p-3.5">
+                                        <span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px]" x-text="cust.status"></span>
+                                    </td>
+                                    <td class="p-3.5 text-right">
+                                        <button @click="viewCustomer(cust)" class="text-xs text-slate-800 hover:underline font-semibold">View Details</button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: KYC REVIEW & APPROVAL -->
+            <div x-show="currentTab === 'kyc'" class="space-y-4">
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-xs">
+                    ⚖️ <strong>Compliance Safeguard:</strong> Approve or reject identity verification documents. Every decision is logged into the immutable Audit Log.
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <template x-for="kyc in pendingKycList" :key="kyc.id">
+                        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+                            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                                <div>
+                                    <div class="font-bold text-sm text-slate-900" x-text="kyc.name"></div>
+                                    <div class="text-xs text-slate-500 font-mono" x-text="'Customer ID: ' + kyc.id"></div>
+                                </div>
+                                <span class="text-[10px] bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-semibold">Pending Review</span>
+                            </div>
+
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between"><span class="text-slate-500">National ID Number:</span><span class="font-mono text-slate-800" x-text="kyc.idCard"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Submission Timestamp:</span><span class="text-slate-800" x-text="kyc.time"></span></div>
+                            </div>
+
+                            <div class="p-3 bg-slate-100 rounded-lg text-center text-xs text-slate-500 border border-dashed border-slate-300">
+                                📄 Identification Document Copy / Passport Image
+                            </div>
+
+                            <div class="flex gap-2 pt-2">
+                                <button @click="approveKyc(kyc)" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-xs py-2 rounded-lg font-medium transition">Approve KYC</button>
+                                <button @click="rejectKyc(kyc)" class="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs py-2 rounded-lg font-medium transition">Reject Document</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- TAB 4: PARTNER & SPONSORED OFFER APPROVAL -->
+            <div x-show="currentTab === 'partner'" class="space-y-4">
+                <div class="bg-indigo-50 border border-indigo-200 text-indigo-900 p-4 rounded-xl text-xs space-y-1">
+                    <div class="font-bold">📢 Disclosure Principle Requirement:</div>
+                    <div>All sponsored financial offers must be strictly segregated and labeled from unbiased simulator results on the mobile application.</div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+                    <h3 class="font-bold text-sm text-slate-900">Pending Sponsored Offer Review</h3>
+                    <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded">SPONSORED OFFER</span>
+                                <h4 class="font-bold text-slate-900 text-sm mt-1">ABC Gold Return Growth Fund</h4>
+                                <p class="text-xs text-slate-500">Submitted by Partner: ABC Asset Management Co., Ltd.</p>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-700">Category: Gold / Investment</span>
+                        </div>
+
+                        <div class="p-3 bg-white border border-slate-200 rounded-lg text-xs space-y-1">
+                            <div class="font-semibold text-slate-800">Mobile Application Preview:</div>
+                            <div class="p-2 bg-amber-50 border border-amber-200 rounded text-amber-900 text-[11px] font-medium">
+                                🏷️ [Verified Partner] Get 50% fee discount when investing through our partner platform.
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button @click="alert('Sponsored Offer Approved!')" class="bg-slate-900 hover:bg-slate-800 text-white text-xs px-4 py-2 rounded-lg font-medium">Approve & Publish</button>
+                            <button @click="alert('Returned to partner for revision.')" class="bg-white border border-slate-300 text-slate-700 text-xs px-4 py-2 rounded-lg font-medium">Return for Revision</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: QUEST & CONTENT MANAGEMENT -->
+            <div x-show="currentTab === 'content'" class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-slate-900">Quest & Financial Literacy Content</h3>
+                    <button @click="alert('Open Quest Creation Form')" class="bg-slate-900 text-white text-xs px-3.5 py-2 rounded-lg font-medium">+ Create New Quest</button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">FREE TIER</span>
+                            <span class="text-xs font-bold text-amber-600">+50 Points</span>
+                        </div>
+                        <h4 class="font-bold text-xs text-slate-900">Compound Interest Mastery</h4>
+                        <p class="text-[11px] text-slate-500">Format: Video + 3-Question Quiz</p>
+                        <div class="text-[10px] text-slate-400">Status: Published</div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-purple-100 text-purple-800 rounded">PREMIUM TIER</span>
+                            <span class="text-xs font-bold text-amber-600">+100 Points</span>
+                        </div>
+                        <h4 class="font-bold text-xs text-slate-900">Professional Asset Allocation Simulation</h4>
+                        <p class="text-[11px] text-slate-500">Format: Interactive Simulator Quest</p>
+                        <div class="text-[10px] text-slate-400">Status: Published</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: MARKET DATA MANAGEMENT -->
+            <div x-show="currentTab === 'market'" class="space-y-6">
+                <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-between items-center">
+                    <div>
+                        <div class="text-xs font-bold text-slate-900">Market Data Synchronization Hub</div>
+                        <div class="text-[11px] text-slate-500">Update asset pricing feeds used by the Money Simulator engine.</div>
+                    </div>
+                    <button @click="alert('Market Data Synchronization Completed successfully.')" class="bg-slate-900 text-white text-xs px-3.5 py-2 rounded-lg font-medium">Sync Data Now</button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Asset Price Movement Index</h3>
+                            <p class="text-[11px] text-slate-500">Historical trend feed for Gold (XAU-USD) and SET Index simulation feed</p>
+                        </div>
+                        <span class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-md">Live Sync Active</span>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="marketChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 border-b border-slate-200 font-semibold uppercase text-[10px] text-slate-500">
+                            <tr>
+                                <th class="p-3.5">Asset Code</th>
+                                <th class="p-3.5">Asset Name</th>
+                                <th class="p-3.5">Asset Category</th>
+                                <th class="p-3.5">Latest Unit Price</th>
+                                <th class="p-3.5">Data Source</th>
+                                <th class="p-3.5">Last Sync Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3.5 font-mono font-medium text-slate-900">XAU-USD</td>
+                                <td class="p-3.5 font-medium text-slate-800">Gold Spot Rate</td>
+                                <td class="p-3.5"><span class="px-2 py-0.5 bg-amber-50 text-amber-800 rounded text-[10px]">Gold</span></td>
+                                <td class="p-3.5 font-semibold text-slate-900 font-mono">$2,050.30 USD</td>
+                                <td class="p-3.5">Global Bullion Feed</td>
+                                <td class="p-3.5 text-slate-400">Today, 16:30</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 7: REPORTS & AUDIT LOGS -->
+            <div x-show="currentTab === 'logs'" class="space-y-6">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-slate-900">Immutable Staff Action Audit Trail</h3>
+                    <button @click="alert('Audit logs exported successfully (.CSV)')" class="bg-white border border-slate-300 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-medium">Export CSV Report</button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                    <div class="mb-4">
+                        <h3 class="text-sm font-bold text-slate-900">Operational Events Summary</h3>
+                        <p class="text-[11px] text-slate-500">Security, KYC, and system configuration action logs breakdown</p>
+                    </div>
+                    <div class="relative h-56">
+                        <canvas id="logsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 border-b border-slate-200 font-semibold uppercase text-[10px] text-slate-500">
+                            <tr>
+                                <th class="p-3.5">Timestamp</th>
+                                <th class="p-3.5">Actor ID</th>
+                                <th class="p-3.5">Assigned Role</th>
+                                <th class="p-3.5">Action Event</th>
+                                <th class="p-3.5">Event Details</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-mono text-[11px]">
+                            <template x-for="log in auditLogs" :key="log.id">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3.5 text-slate-400" x-text="log.time"></td>
+                                    <td class="p-3.5 font-semibold text-slate-800" x-text="log.actor"></td>
+                                    <td class="p-3.5" x-text="log.role"></td>
+                                    <td class="p-3.5 text-indigo-700 font-semibold" x-text="log.action"></td>
+                                    <td class="p-3.5 text-slate-600" x-text="log.details"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- APPLICATION LOGIC & CHART INITIALIZATION -->
+    <script>
+        function backofficeApp() {
+            return {
+                step: 'login',
+                logoUrl: 'content.png',
+
+                loginForm: { email: 'admin@funfund.io', password: 'password123' },
+                currentRole: null,
+                currentTab: 'dashboard',
+                customerSearch: '',
+                chartInstances: {},
+
+                roles: [
+                    { id: 'admin', name: 'Administrator', badge: 'Superuser', desc: 'Full administrative access across all modules, user roles, and ultimate approval authority.', permissions: ['dashboard', 'customers', 'kyc', 'partner', 'content', 'market', 'logs'] },
+                    { id: 'operation', name: 'Operation Officer', badge: 'Operations', desc: 'Manages customer records, B2C/B2B subscriptions, and market data feed configurations.', permissions: ['dashboard', 'customers', 'market', 'logs'] },
+                    { id: 'cs', name: 'Customer Support', badge: 'Support', desc: 'Read-only access to customer profiles and system logs for troubleshooting user issues.', permissions: ['dashboard', 'customers'] },
+                    { id: 'content', name: 'Content Manager', badge: 'Education', desc: 'Manages financial literacy lessons, quizzes, and gamified quest progression.', permissions: ['dashboard', 'content'] },
+                    { id: 'compliance', name: 'Compliance Officer', badge: 'Approver', desc: 'Reviews KYC verifications and audits partner sponsorship disclosures.', permissions: ['dashboard', 'kyc', 'partner', 'logs'] }
+                ],
+
+                allMenus: [
+                    { id: 'dashboard', name: 'Dashboard' },
+                    { id: 'customers', name: 'Customer Management' },
+                    { id: 'kyc', name: 'KYC Review & Approval', badge: '3' },
+                    { id: 'partner', name: 'Partner Offer Approval', badge: '1' },
+                    { id: 'content', name: 'Quest & Content' },
+                    { id: 'market', name: 'Market Data Sync' },
+                    { id: 'logs', name: 'Audit Logs & Reports' }
+                ],
+
+                get filteredMenus() {
+                    if (!this.currentRole) return [];
+                    return this.allMenus.filter(m => this.currentRole.permissions.includes(m.id));
+                },
+
+                pendingKycList: [
+                    { id: 'CUS-10293', name: 'Johnathan Doe', idCard: '1-1002-39201-92-1', time: '10 mins ago' },
+                    { id: 'CUS-10294', name: 'Sarah Jenkins', idCard: '3-4012-00291-88-2', time: '35 mins ago' },
+                    { id: 'CUS-10295', name: 'Alex Wong', idCard: '1-5099-00123-11-0', time: '2 hours ago' }
+                ],
+
+                customers: [
+                    { id: 'CUS-10293', name: 'Johnathan Doe', phone: '+66 891234567', kyc: 'Pending', tier: 'Student', status: 'Active' },
+                    { id: 'CUS-00122', name: 'Sarah Jenkins', phone: '+66 819988776', kyc: 'Verified', tier: 'Individual', status: 'Active' },
+                    { id: 'CUS-00089', name: 'Alex Wong', phone: '+66 865544332', kyc: 'Rejected', tier: 'Free', status: 'Suspended' }
+                ],
+
+                auditLogs: [
+                    { id: 1, time: '2026-09-23 20:15:02', actor: 'ADM-01', role: 'Administrator', action: 'ROLE_UPDATE', details: 'Updated access scope for STAFF-04' },
+                    { id: 2, time: '2026-09-23 19:40:12', actor: 'CMP-02', role: 'Compliance Officer', action: 'KYC_APPROVE', details: 'Approved KYC submission for user CUS-00122' },
+                    { id: 3, time: '2026-09-23 18:22:00', actor: 'OPR-01', role: 'Operation Officer', action: 'MARKET_SYNC', details: 'Triggered manual sync for Gold and SET Stock feeds' }
+                ],
+
+                get filteredCustomers() {
+                    if (!this.customerSearch) return this.customers;
+                    const search = this.customerSearch.toLowerCase();
+                    return this.customers.filter(c => 
+                        c.name.toLowerCase().includes(search) || 
+                        c.id.toLowerCase().includes(search) || 
+                        c.phone.includes(search)
+                    );
+                },
+
+                get canEditCustomer() {
+                    return ['admin', 'operation'].includes(this.currentRole?.id);
+                },
+
+                handleLogin() {
+                    if (this.loginForm.email && this.loginForm.password) {
+                        this.step = 'role_select';
+                    }
+                },
+
+                selectRole(roleItem) {
+                    this.currentRole = roleItem;
+                    this.step = 'app';
+                    this.switchTab(this.filteredMenus[0]?.id || 'dashboard');
+                },
+
+                switchRole() { this.step = 'role_select'; },
+                logout() { this.step = 'login'; this.currentRole = null; },
+
+                switchTab(tabId) {
+                    this.currentTab = tabId;
+                    this.$nextTick(() => {
+                        this.renderChartsForTab(tabId);
+                    });
+                },
+
+                renderChartsForTab(tabId) {
+                    if (tabId === 'dashboard') {
+                        this.initGrowthChart();
+                        this.initTierChart();
+                    } else if (tabId === 'market') {
+                        this.initMarketChart();
+                    } else if (tabId === 'logs') {
+                        this.initLogsChart();
+                    }
+                },
+
+                initGrowthChart() {
+                    const ctx = document.getElementById('growthChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.chartInstances['growthChart']) this.chartInstances['growthChart'].destroy();
+
+                    this.chartInstances['growthChart'] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                            datasets: [
+                                {
+                                    label: 'Active Users',
+                                    data: [7200, 8100, 9500, 10200, 11400, 12480],
+                                    borderColor: '#0f172a',
+                                    backgroundColor: 'rgba(15, 23, 42, 0.05)',
+                                    fill: true,
+                                    tension: 0.3
+                                },
+                                {
+                                    label: 'Simulations Executed',
+                                    data: [3100, 4200, 5800, 7100, 8900, 11200],
+                                    borderColor: '#f59e0b',
+                                    backgroundColor: 'transparent',
+                                    borderDash: [5, 5],
+                                    tension: 0.3
+                                }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                },
+
+                initTierChart() {
+                    const ctx = document.getElementById('tierChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.chartInstances['tierChart']) this.chartInstances['tierChart'].destroy();
+
+                    this.chartInstances['tierChart'] = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Free Tier', 'Student Tier', 'Individual Tier'],
+                            datasets: [{
+                                data: [65, 25, 10],
+                                backgroundColor: ['#94a3b8', '#3b82f6', '#0f172a']
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+                },
+
+                initMarketChart() {
+                    const ctx = document.getElementById('marketChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.chartInstances['marketChart']) this.chartInstances['marketChart'].destroy();
+
+                    this.chartInstances['marketChart'] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['09:00', '11:00', '13:00', '15:00', '17:00'],
+                            datasets: [{
+                                label: 'Gold Spot Index (XAU)',
+                                data: [2042, 2045, 2048, 2046, 2050],
+                                borderColor: '#d97706',
+                                tension: 0.2
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                },
+
+                initLogsChart() {
+                    const ctx = document.getElementById('logsChart')?.getContext('2d');
+                    if (!ctx) return;
+                    if (this.chartInstances['logsChart']) this.chartInstances['logsChart'].destroy();
+
+                    this.chartInstances['logsChart'] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['KYC Approvals', 'Market Syncs', 'Role Modifications', 'Content Updates'],
+                            datasets: [{
+                                label: 'Action Count',
+                                data: [42, 18, 5, 24],
+                                backgroundColor: '#1e293b'
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                },
+
+                approveKyc(kyc) {
+                    alert('KYC Document for ' + kyc.name + ' approved successfully!');
+                    this.pendingKycList = this.pendingKycList.filter(k => k.id !== kyc.id);
+                },
+
+                rejectKyc(kyc) {
+                    const reason = prompt('Specify rejection reason:');
+                    if (reason) {
+                        alert('KYC status rejected.');
+                        this.pendingKycList = this.pendingKycList.filter(k => k.id !== kyc.id);
+                    }
+                },
+
+                viewCustomer(cust) { alert('Customer Details: ' + cust.name); },
+
+                getMenuTitle(tabId) {
+                    const map = {
+                        dashboard: 'System Overview Dashboard',
+                        customers: 'Customer Management Portal',
+                        kyc: 'KYC Verification & Approval Queue',
+                        partner: 'Partner Sponsored Offer Approval',
+                        content: 'Quest & Educational Content Hub',
+                        market: 'Market Data Sync Infrastructure',
+                        logs: 'Audit Logs & Reporting System'
+                    };
+                    return map[tabId] || 'Backoffice Portal';
+                },
+
+                getMenuDesc(tabId) {
+                    const map = {
+                        dashboard: 'Real-time operational status, pending queues, and analytics visual graphs.',
+                        customers: 'Manage user profiles, subscription tiers, and account permissions.',
+                        kyc: 'Review identity verification submissions adhering to compliance guidelines.',
+                        partner: 'Enforce disclosure transparency and approve verified partner sponsored offers.',
+                        content: 'Curate gamified quests and financial literacy modules for user tiers.',
+                        market: 'Monitor asset pricing synchronization for real-time simulator calculations.',
+                        logs: 'Immutable record of staff interactions and security action history.'
+                    };
+                    return map[tabId] || '';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
